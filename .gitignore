@@ -14,6 +14,11 @@ package.json
 .vsixmanifest
 claude-code-settings.schema.json
 
+# Allow our own vscode-extension sources
+!vscode-extension/extension.js
+!vscode-extension/package.json
+!vscode-extension/build.js
+
 # 扩展资源
 resources/
 image/

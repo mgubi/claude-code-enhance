@@ -1,0 +1,31 @@
+{
+  "name": "claude-code-enhance",
+  "displayName": "Claude Code Enhance",
+  "description": "Patches Claude Code with syntax highlighting, LaTeX, copy buttons, and zoom.",
+  "version": "0.1.0",
+  "publisher": "mgubi",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeCodeEnhance.patch",
+        "title": "Claude Code Enhance: Apply Patch"
+      },
+      {
+        "command": "claudeCodeEnhance.restore",
+        "title": "Claude Code Enhance: Restore Original"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "claudeCodeEnhance.patch",   "when": "!claudeCodeEnhance.isPatched" },
+        { "command": "claudeCodeEnhance.restore", "when": "claudeCodeEnhance.isPatched" }
+      ]
+    }
+  },
+  "scripts": { "build": "node build.js" },
+  "devDependencies": { "@vscode/vsce": "^3.0.0" }
+}

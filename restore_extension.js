@@ -38,4 +38,11 @@ if (!fs.existsSync(backupJs)) {
 
 fs.copyFileSync(backupJs, extensionJs);
 console.log('[Restore] extension.js restored from backup.');
+
+const enhanceTarget = path.join(extDir, 'webview', 'enhance.js');
+if (fs.existsSync(enhanceTarget)) {
+  fs.unlinkSync(enhanceTarget);
+  console.log('[Restore] Removed enhance.js from webview directory.');
+}
+
 console.log('[Restore] Please reload the VSCode window.');

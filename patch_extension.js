@@ -43,14 +43,21 @@ if (!fs.existsSync(backupJs)) {
   console.log('[Patch] Backup already exists, skipping');
 }
 
-// Copy enhance.js
+// Copy enhance.js — only if content changed (triggers reload when a newer version is shipped)
 const targetEnhance = path.join(extDir, 'webview', 'enhance.js');
-fs.copyFileSync(enhanceJs, targetEnhance);
-console.log('[Patch] Copied enhance.js');
+let modified = false;
+const newEnhance = fs.readFileSync(enhanceJs);
+const oldEnhance = fs.existsSync(targetEnhance) ? fs.readFileSync(targetEnhance) : null;
+if (!oldEnhance || !oldEnhance.equals(newEnhance)) {
+  fs.copyFileSync(enhanceJs, targetEnhance);
+  modified = true;
+  console.log('[Patch] Copied enhance.js (updated)');
+} else {
+  console.log('[Patch] enhance.js: up to date');
+}
 
 // Read extension.js
 let content = fs.readFileSync(extensionJs, 'utf8');
-let modified = false;
 
 // ========== Patch 1: add CDN to style-src ==========
 if (!content.includes("style-src") || content.includes("style-src") && !content.match(/style-src[^`]*cdnjs/)) {
@@ -69,12 +76,17 @@ if (!content.includes("style-src") || content.includes("style-src") && !content.
 
 // ========== Patch 2: add CDN to script-src ==========
 if (!content.match(/script-src 'nonce-\$\{[^}]+\}' https:\/\/cdnjs/)) {
+  const before2 = content;
   content = content.replace(
     /script-src 'nonce-\$\{(\w)\}'/g,
     "script-src 'nonce-${$1}' https://cdnjs.cloudflare.com"
   );
-  modified = true;
-  console.log('[Patch] Updated script-src CSP');
+  if (content !== before2) {
+    modified = true;
+    console.log('[Patch] Updated script-src CSP');
+  } else {
+    console.log('[Patch] script-src: pattern not found, skipping');
+  }
 } else {
   console.log('[Patch] script-src: already patched');
 }
@@ -100,11 +112,20 @@ if (!vscodeVar) {
   console.error('[Patch] Could not detect vscode variable name — skipping enhance.js injection');
 } else {
   console.log('[Patch] Detected vscode variable:', vscodeVar);
+  // Detect the webview object variable dynamically (used to call asWebviewUri)
+  const webviewVarMatch = content.match(/(\w+)\.asWebviewUri\(/);
+  const webviewVar = webviewVarMatch ? webviewVarMatch[1] : null;
+  if (!webviewVar) {
+    console.error('[Patch] Could not detect webview variable name — skipping enhance.js injection');
+  } else {
+  console.log('[Patch] Detected webview variable:', webviewVar);
   // Build the correct inject snippet
   const scriptMatch = content.match(/nonce="\$\{(\w+)\}" src="\$\{(\w+)\}" type="module"><\/script>/);
-  if (scriptMatch) {
-    const [full, nonceVar, srcVar] = scriptMatch;
-    const injectSnippet = `<script nonce="\${${nonceVar}}" src="\${z.asWebviewUri(${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js"))}"></script>`;
+  if (!scriptMatch) {
+    console.error('[Patch] Could not find script tag pattern — skipping enhance.js injection');
+  } else {
+  const [full, nonceVar, srcVar] = scriptMatch;
+    const injectSnippet = `<script nonce="\${${nonceVar}}" src="\${${webviewVar}.asWebviewUri(${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js"))}"></script>`;
     const correctFull = `nonce="\${${nonceVar}}" src="\${${srcVar}}" type="module"></script>${injectSnippet}`;
 
     if (!content.includes('enhance.js')) {
@@ -120,21 +141,26 @@ if (!vscodeVar) {
     } else {
       console.log('[Patch] enhance.js: already injected with correct variable');
     }
-  }
-}
+  } // end if scriptMatch
+  } // end if webviewVar
+} // end if vscodeVar
 
 // Patch 5: fix diff view filling the whole window - open in the side panel
-// Find the let v={preview:!1} pattern and add viewColumn:Beside
+const before5 = content;
 content = content.replace(
   /let v=\{preview:!1\}/g,
   'let v={preview:!1,viewColumn:tr.ViewColumn.Beside}'
 );
-
-// Also patch the alternative variable name N
 content = content.replace(
   /let N=\{preview:!1,preserveFocus:!0\}/g,
   'let N={preview:!1,preserveFocus:!0,viewColumn:Gt.ViewColumn.Beside}'
 );
+if (content !== before5) {
+  modified = true;
+  console.log('[Patch] Updated diff view options');
+} else {
+  console.log('[Patch] diff view options: already patched or not found');
+}
 
 // Write back to file
 if (modified) {
