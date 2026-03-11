@@ -34,6 +34,15 @@ const enhanceJs = path.join(__dirname, 'webview', 'enhance.js');
 console.log('[Patch] Extension dir:', extDir);
 console.log('[Patch] Applying patch v7...');
 
+// Backup original extension.js (only on first run — never overwrite an existing backup)
+const backupJs = extensionJs + '.orig';
+if (!fs.existsSync(backupJs)) {
+  fs.copyFileSync(extensionJs, backupJs);
+  console.log('[Patch] Backup saved to extension.js.orig');
+} else {
+  console.log('[Patch] Backup already exists, skipping');
+}
+
 // Copy enhance.js
 const targetEnhance = path.join(extDir, 'webview', 'enhance.js');
 fs.copyFileSync(enhanceJs, targetEnhance);

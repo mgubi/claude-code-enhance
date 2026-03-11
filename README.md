@@ -58,6 +58,16 @@ Once injected, `enhance.js` runs inside the webview on every page load. It uses 
 | List fix | Numbered lists render without truncation |
 | DOM inspector | `Ctrl+Shift+D` copies the page DOM structure to the clipboard |
 
+## Restoring the original extension
+
+`patch_extension.js` saves a backup of the original `extension.js` as `extension.js.orig` on first run (subsequent runs never overwrite it). To restore:
+
+```bash
+node restore_extension.js
+```
+
+Then reload VSCode.
+
 ## Troubleshooting
 
 - **Features not showing** — reload the VSCode window.
