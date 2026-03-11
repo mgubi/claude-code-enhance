@@ -112,37 +112,39 @@ if (!vscodeVar) {
   console.error('[Patch] Could not detect vscode variable name — skipping enhance.js injection');
 } else {
   console.log('[Patch] Detected vscode variable:', vscodeVar);
-  // Detect the webview object variable dynamically (used to call asWebviewUri)
-  const webviewVarMatch = content.match(/(\w+)\.asWebviewUri\(/);
-  const webviewVar = webviewVarMatch ? webviewVarMatch[1] : null;
-  if (!webviewVar) {
-    console.error('[Patch] Could not detect webview variable name — skipping enhance.js injection');
-  } else {
-  console.log('[Patch] Detected webview variable:', webviewVar);
   // Build the correct inject snippet
   const scriptMatch = content.match(/nonce="\$\{(\w+)\}" src="\$\{(\w+)\}" type="module"><\/script>/);
   if (!scriptMatch) {
     console.error('[Patch] Could not find script tag pattern — skipping enhance.js injection');
   } else {
   const [full, nonceVar, srcVar] = scriptMatch;
+  // Detect the webview variable from the assignment of srcVar (e.g. x=z.asWebviewUri(N))
+  // This scopes detection to the getHtmlForWebview function rather than the whole file.
+  const webviewVarMatch = content.match(new RegExp(srcVar + '=(\\w+)\\.asWebviewUri\\('));
+  const webviewVar = webviewVarMatch ? webviewVarMatch[1] : null;
+  if (!webviewVar) {
+    console.error('[Patch] Could not detect webview variable name — skipping enhance.js injection');
+  } else {
+  console.log('[Patch] Detected webview variable:', webviewVar);
     const injectSnippet = `<script nonce="\${${nonceVar}}" src="\${${webviewVar}.asWebviewUri(${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js"))}"></script>`;
     const correctFull = `nonce="\${${nonceVar}}" src="\${${srcVar}}" type="module"></script>${injectSnippet}`;
+    const correctPattern = `${webviewVar}.asWebviewUri(${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js"))`;
 
     if (!content.includes('enhance.js')) {
       // Fresh injection
       content = content.replace(full, correctFull);
       modified = true;
       console.log('[Patch] Injected enhance.js');
-    } else if (!content.includes(`${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js")`)) {
-      // Already injected but with a stale variable name — replace it
-      content = content.replace(/\w+\.Uri\.joinPath\(this\.extensionUri,"webview","enhance\.js"\)/, `${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js")`);
+    } else if (!content.includes(correctPattern)) {
+      // Already injected but with stale variable names — replace the whole enhance.js script tag
+      content = content.replace(/<script[^>]*src="\$\{[^}]*enhance\.js[^>]*><\/script>/, injectSnippet);
       modified = true;
-      console.log('[Patch] Updated enhance.js injection (stale vscode variable replaced with', vscodeVar + ')');
+      console.log('[Patch] Updated enhance.js injection (stale variables replaced)');
     } else {
-      console.log('[Patch] enhance.js: already injected with correct variable');
+      console.log('[Patch] enhance.js: already injected with correct variables');
     }
-  } // end if scriptMatch
   } // end if webviewVar
+  } // end if scriptMatch
 } // end if vscodeVar
 
 // Patch 5: fix diff view filling the whole window - open in the side panel

@@ -19,15 +19,30 @@ UI enhancements for the Claude Code VSCode extension:
 
 ## Installation
 
+### Option A — VSCode extension (recommended)
+
+Install once; patches automatically on startup and after every Claude Code update.
+
 ```bash
-node patch_extension.js
+# From the repo root:
+ln -s "$(pwd)/vscode-extension" ~/.vscode/extensions/mgubi.claude-code-enhance-0.1.0
 ```
 
 Then reload VSCode (`Ctrl+Shift+P` → `Developer: Reload Window`).
 
-The script copies `webview/enhance.js` into the extension directory and relaxes the CSP to allow loading from cdnjs.cloudflare.com.
+Two commands are available in the Command Palette — only the relevant one is shown at a time:
+- **Claude Code Enhance: Apply Patch** — when not yet patched
+- **Claude Code Enhance: Restore Original** — when patched
 
-> **Note:** Re-run after every Claude Code extension update, as updates overwrite `extension.js`.
+### Option B — run manually
+
+```bash
+node patch_extension.js
+```
+
+Then reload VSCode. Re-run after every Claude Code extension update.
+
+The script copies `webview/enhance.js` into the extension directory and relaxes the CSP to allow loading from cdnjs.cloudflare.com.
 
 ## How it works
 

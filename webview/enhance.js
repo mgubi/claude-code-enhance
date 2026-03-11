@@ -39,54 +39,74 @@
         list-style-type: decimal !important;
       }
 
-      /* Table styles - dark theme */
+      /* Table styles — shared structure */
       table {
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
         margin: 1em 0;
         font-size: 0.95em;
-        color: #e0e0e0;
         border-radius: 4px;
         overflow: hidden;
-        border: 3px solid #707070;
-      }
-      table thead {
-        background: linear-gradient(to bottom, #2d2d2d, #252525);
       }
       table th {
         padding: 10px 14px;
         text-align: left;
         font-weight: 600;
-        border: 3px solid #707070;
-        color: #ffffff;
       }
-      table th:first-child {
-        border-top-left-radius: 4px;
-      }
-      table th:last-child {
-        border-top-right-radius: 4px;
-      }
+      table th:first-child { border-top-left-radius: 4px; }
+      table th:last-child  { border-top-right-radius: 4px; }
       table td {
         padding: 10px 14px;
-        border: 3px solid #707070;
         border-top: none;
         border-left: none;
       }
-      table td:last-child {
-        border-right: none;
+      table td:last-child { border-right: none; }
+      table tbody tr:last-child td:first-child { border-bottom-left-radius: 4px; }
+      table tbody tr:last-child td:last-child  { border-bottom-right-radius: 4px; }
+
+      /* Dark theme */
+      body.vscode-dark table {
+        color: #e0e0e0;
+        border: 3px solid #707070;
       }
-      table tbody tr:last-child td:first-child {
-        border-bottom-left-radius: 4px;
+      body.vscode-dark table thead {
+        background: linear-gradient(to bottom, #2d2d2d, #252525);
       }
-      table tbody tr:last-child td:last-child {
-        border-bottom-right-radius: 4px;
+      body.vscode-dark table th {
+        border: 3px solid #707070;
+        color: #ffffff;
       }
-      table tbody tr:nth-child(even) {
+      body.vscode-dark table td {
+        border: 3px solid #707070;
+      }
+      body.vscode-dark table tbody tr:nth-child(even) {
         background-color: rgba(255, 255, 255, 0.03);
       }
-      table tbody tr:hover {
+      body.vscode-dark table tbody tr:hover {
         background-color: rgba(255, 255, 255, 0.08);
+      }
+
+      /* Light theme */
+      body.vscode-light table {
+        color: #1a1a1a;
+        border: 2px solid #c8c8c8;
+      }
+      body.vscode-light table thead {
+        background: linear-gradient(to bottom, #f0f0f0, #e8e8e8);
+      }
+      body.vscode-light table th {
+        border: 2px solid #c8c8c8;
+        color: #111111;
+      }
+      body.vscode-light table td {
+        border: 2px solid #c8c8c8;
+      }
+      body.vscode-light table tbody tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+      body.vscode-light table tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.06);
       }
 
       /* Code block line wrapping */
@@ -110,12 +130,19 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 4px;
         color: #e0e0e0;
-        padding: 4px 8px;
-        font-size: 12px;
+        padding: 3px 5px;
+        font-size: 11px;
+        line-height: 1;
         cursor: pointer;
         opacity: 0;
         transition: opacity 0.2s, background 0.2s;
         z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .claude-copy-btn svg {
+        display: block;
       }
       .claude-copy-btn:hover {
         background: rgba(80, 80, 80, 0.95);
@@ -533,7 +560,7 @@
 
     const btn = document.createElement('button');
     btn.className = 'claude-copy-btn';
-    btn.textContent = 'Copy';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
     btn.title = 'Copy full Markdown content (excluding thinking chain and tool calls)';
 
     btn.addEventListener('click', async (e) => {
@@ -547,17 +574,19 @@
       const finalContent = contents.join('\n\n');
 
       try {
+        var copyIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        var checkIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
         await navigator.clipboard.writeText(finalContent);
-        btn.textContent = 'Copied';
+        btn.innerHTML = checkIcon;
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.textContent = 'Copy';
+          btn.innerHTML = copyIcon;
           btn.classList.remove('copied');
         }, 1500);
       } catch (err) {
         console.error('[Claude Enhance] Copy failed:', err);
-        btn.textContent = 'Failed';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+        btn.innerHTML = '✕';
+        setTimeout(() => { btn.innerHTML = copyIcon; }, 1500);
       }
     });
 
