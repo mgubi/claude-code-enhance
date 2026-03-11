@@ -1,9 +1,9 @@
-# 备份文件
+# Backup files
 *.bak
 *.bak2
 *.bak3
 
-# 扩展自带文件 (不需要上传)
+# Claude Code extension files (not part of this repo)
 extension.js
 extension.js.bak*
 index.js
@@ -19,10 +19,10 @@ claude-code-settings.schema.json
 !vscode-extension/package.json
 !vscode-extension/build.js
 
-# 扩展资源
+# Extension assets
 resources/
 image/
 
-# 系统文件
+# System files
 .DS_Store
 Thumbs.db
