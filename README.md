@@ -1,5 +1,7 @@
 # claude-code-enhance
 
+> Inspired by [Sophomoresty/claude-code-enhance](https://github.com/Sophomoresty/claude-code-enhance).
+
 UI enhancements for the Claude Code VSCode extension:
 
 - **Syntax highlighting** — 180+ languages via Highlight.js
