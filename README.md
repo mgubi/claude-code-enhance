@@ -1,101 +1,54 @@
-# 🎉 claude-code-enhance - Enhance Your Code Experience Effortlessly!
+# claude-code-enhance
 
-[![Download claude-code-enhance](https://img.shields.io/badge/Download-Release-blue.svg)](https://github.com/buffbeard920/claude-code-enhance/releases)
+UI enhancements for the Claude Code VSCode extension.
 
-## 🚀 Getting Started
+## Requirements
 
-Welcome to **claude-code-enhance**! This tool enhances the Claude Code extension for VSCode by adding features like code highlighting and LaTeX rendering. Follow these steps to download and run the software smoothly.
+- Claude Code extension v2.1.31+
+- macOS / Windows / Linux
 
-## 📥 Download & Install
+## Installation
 
-To get started, you need to download the latest version from our Releases page. Click the link below:
+```bash
+node patch_extension.js
+```
 
-[Visit this page to download](https://github.com/buffbeard920/claude-code-enhance/releases)
+Then reload VSCode (`Ctrl+Shift+P` → `Developer: Reload Window`).
 
-1. Click the link above to go to the Releases page.
-2. Look for the latest version.
-3. Download the file suitable for your platform (Windows or Linux).
-   
-### 🎯 System Requirements
+The script copies `webview/enhance.js` into the extension directory and relaxes the CSP to allow loading from cdnjs.cloudflare.com.
 
-- **Claude Code Extension:** Version 2.1.31 or higher.
-- **Platforms Supported:** 
-  - Windows (win32-x64)
-  - Linux (linux-x64)
+> **Note:** Re-run after every Claude Code extension update, as updates overwrite `extension.js`.
 
-### 🔧 Installation Methods
+## How it works
 
-You can install the enhancement using two methods: a patch script (recommended) or manual installation.
+The Claude Code extension renders its UI in a VSCode webview — an isolated iframe with a strict [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) that blocks external resources by default.
 
-#### 🛠️ Method 1: Patch Script (Recommended)
+`patch_extension.js` makes five targeted edits to the extension's compiled `extension.js`:
 
-1. Open your command line.
-2. Change the directory to where **claude-code-enhance** is located:
-   ```bash
-   cd claude-code-enhance
-   ```
-3. Run the patch script:
-   ```bash
-   node patch_extension.js
-   ```
+| # | What is patched | Why |
+|---|-----------------|-----|
+| 1 | `style-src` CSP | allows loading stylesheets from cdnjs.cloudflare.com |
+| 2 | `script-src` CSP | allows loading scripts from cdnjs.cloudflare.com |
+| 3 | `font-src` CSP | allows KaTeX fonts from cdnjs + inline `data:` URIs |
+| 4 | HTML template | injects a `<script>` tag that loads `enhance.js` after the main module |
+| 5 | Diff view options | adds `viewColumn: Beside` so diffs open in a side panel instead of full-window |
 
-The script will automatically:
-- Find the currently installed Claude Code extension.
-- Copy the `enhance.js` file to the extension directory.
-- Update the CSP policy to allow CDN resources.
-- Inject the enhancement script for you.
+Once injected, `enhance.js` runs inside the webview on every page load. It uses a debounced `MutationObserver` (500 ms quiet period) to watch for new content and re-applies highlighting, LaTeX rendering, and copy buttons as Claude streams its responses. Libraries (Highlight.js, KaTeX) are loaded lazily from cdnjs on first use.
 
-#### 📁 Method 2: Manual Installation
+## Features
 
-1. Navigate to the `webview/` directory in the downloaded files.
-2. Copy the `enhance.js` file into the `webview/` directory of your Claude Code extension.
-3. Edit the `extension.js` file:
-   - Modify the CSP policy to include the necessary rules.
-4. In your HTML template, inject the `<script>` tag for `enhance.js`.
+| Feature | Description |
+|---------|-------------|
+| Code highlighting | 180+ languages via Highlight.js (vs2015 theme) |
+| LaTeX rendering | Inline `$...$`, display `$$...$$`, `\(...\)`, `\[...\]` via KaTeX |
+| Copy button | Hover an AI reply to copy it as Markdown (excludes thinking/tool blocks) |
+| Scroll zoom | `Ctrl+Wheel` to zoom 50–200%; persisted across sessions |
+| Table styling | Dark theme with gradient header and hover highlight |
+| Code wrapping | Long lines wrap inside code blocks |
+| List fix | Numbered lists render without truncation |
+| DOM inspector | `Ctrl+Shift+D` copies the page DOM structure to the clipboard |
 
-### 🔄 After Installation
+## Troubleshooting
 
-To see the changes, reload your VSCode window. You can do this by pressing `Ctrl + Shift + P` and selecting `Developer: Reload Window`.
-
-## 💡 Features
-
-Once you have installed **claude-code-enhance**, you can explore its powerful features:
-
-- **Code Syntax Highlighting**: Supports over 180 programming languages, thanks to Highlight.js.
-- **LaTeX Formula Rendering**: Display matrices, fractions, and integrals using KaTeX.
-- **AI Dialogue Copying**: Copy AI response content to your clipboard easily. The content is formatted in Markdown.
-- **DOM Inspection Tool**: Press `Ctrl + Shift + D` to export the DOM structure for analysis.
-- **Dark Table Theme**: Enjoy a gradient header, hover highlights, and rounded borders in tables.
-- **Code Auto-Wrapping**: Long command lines wrap automatically for better readability.
-- **Scroll Wheel Zoom**: Zoom in and out using `Ctrl` and the mouse wheel, with a range of 50% to 200%.
-- **List Style Fixes**: Numbered lists display correctly.
-
-## 📈 Usage Instructions
-
-### 🤖 AI Dialogue Copying
-
-To copy AI responses easily:
-
-1. Hover your mouse over the end of an AI reply.
-2. A "Copy" button will appear in the bottom right corner.
-3. Click the button to copy the AI response in Markdown format.
-4. The tool automatically excludes "Thinking" and tool invocation content but retains the following:
-   - Code blocks
-   - Tables
-   - LaTeX formulas
-   - Lists
-
-### 🧩 Using the DOM Inspection Tool
-
-The DOM inspection tool helps you analyze web structures. To use this tool:
-
-1. Press `Ctrl + Shift + D` to activate the feature.
-2. The tool will generate a report on the DOM structure for your review.
-
-## 🛠️ Troubleshooting
-
-- **Installation Issues**: If you encounter problems, ensure you have the correct version of the Claude Code extension installed.
-- **Feature Activation**: If features do not appear, try reloading the VSCode window again.
-- **Script Errors**: For any script errors, double-check your CSP modifications in the `extension.js` file.
-
-By following these instructions, you should have a seamless experience using the **claude-code-enhance** application. Enjoy your enhanced coding experience!
+- **Features not showing** — reload the VSCode window.
+- **Script errors** — verify the CSP was patched correctly in `extension.js`.

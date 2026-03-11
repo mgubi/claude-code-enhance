@@ -1,6 +1,6 @@
 /**
- * Claude Code UI 增强脚本 v10
- * 功能: 滚轮缩放, 字体, 表格, LaTeX, 换行, 代码高亮, AI对话复制
+ * Claude Code UI Enhancement Script v10
+ * Features: scroll zoom, fonts, tables, LaTeX, line wrap, code highlighting, AI dialogue copy
  */
 
 (function() {
@@ -8,7 +8,7 @@
 
   console.log('[Claude Enhance] Loading...');
 
-  // 注入样式
+  // Inject styles
   function injectStyles() {
     const styleId = 'claude-enhance-styles';
     if (document.getElementById(styleId)) return;
@@ -16,12 +16,12 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      /* 代码块字体 */
+      /* Code block font */
       pre code, .hljs {
         font-family: 'JetBrains Mono NL', 'LXGW WenKai GB Screen R', 'Consolas', 'Monaco', 'Ubuntu Mono', 'Source Code Pro', 'Fira Code', 'DejaVu Sans Mono', 'Courier New', monospace !important;
       }
 
-      /* KaTeX 样式 */
+      /* KaTeX styles */
       .katex {
         font-size: 1.1em;
       }
@@ -30,7 +30,7 @@
         overflow-x: auto;
       }
 
-      /* 列表样式 - 修复数字被截断 */
+      /* List styles - fix truncated numbers */
       ol, ul {
         padding-left: 2em !important;
         list-style-position: outside !important;
@@ -39,7 +39,7 @@
         list-style-type: decimal !important;
       }
 
-      /* 表格样式 - 暗色主题 */
+      /* Table styles - dark theme */
       table {
         border-collapse: separate;
         border-spacing: 0;
@@ -89,7 +89,7 @@
         background-color: rgba(255, 255, 255, 0.08);
       }
 
-      /* 代码块换行 */
+      /* Code block line wrapping */
       pre {
         white-space: pre-wrap !important;
         word-wrap: break-word !important;
@@ -101,7 +101,7 @@
         word-break: break-word !important;
       }
 
-      /* AI 消息复制按钮样式 */
+      /* AI message copy button styles */
       .claude-copy-btn {
         position: absolute;
         bottom: 8px;
@@ -135,7 +135,7 @@
     document.head.appendChild(style);
   }
 
-  // 注入 Highlight.js
+  // Inject Highlight.js
   function injectHighlightJS() {
     if (window.hljsLoaded) return;
 
@@ -154,7 +154,7 @@
     document.head.appendChild(script);
   }
 
-  // 注入 KaTeX
+  // Inject KaTeX
   function injectKaTeX() {
     if (window.katexLoaded) return;
 
@@ -166,7 +166,7 @@
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js';
     script.onload = () => {
-      // 等待 katex 挂载到 window
+      // Wait for katex to be mounted on window
       const checkKatex = () => {
         if (typeof katex !== 'undefined') {
           window.katexLoaded = true;
@@ -184,7 +184,7 @@
     document.head.appendChild(script);
   }
 
-  // 高亮代码块
+  // Highlight code blocks
   function highlightAllCode() {
     if (typeof hljs === 'undefined') return;
 
@@ -196,7 +196,7 @@
     });
   }
 
-  // 渲染 LaTeX
+  // Render LaTeX
   function renderLaTeX() {
     if (typeof katex === 'undefined') return;
     if (window._claudeRenderingLaTeX) return;
@@ -210,7 +210,7 @@
           acceptNode: (node) => {
             const parent = node.parentNode;
             if (!parent || parent.nodeType !== 1) return NodeFilter.FILTER_REJECT;
-            // 跳过已渲染的 KaTeX, 特殊标签, 和 session 列表
+            // Skip already-rendered KaTeX, special tags, and session lists
             if (parent.classList?.contains('katex') ||
                 parent.closest('.katex') ||
                 parent.closest('[class*="sessionsList"]') ||
@@ -242,26 +242,26 @@
           let resultHTML = text;
           let hasFormula = false;
 
-          // $$...$$ 块级公式 (保留换行, 矩阵需要)
+          // $$...$$ block-level formula (preserve newlines, required for matrices)
           resultHTML = resultHTML.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
             hasFormula = true;
             try {
               let fixed = formula;
 
-              // 修复矩阵换行: 单反斜杠+空格/换行 → 双反斜杠
+              // Fix matrix line breaks: single backslash + space/newline → double backslash
               fixed = fixed.replace(/\\\s*\n/g, '\\\\\n');
               fixed = fixed.replace(/\\ (?=[a-zA-Z0-9_{}])/g, '\\\\ ');
 
-              // 修复间距命令 \[x] → \\[x]
+              // Fix spacing commands \[x] → \\[x]
               fixed = fixed.replace(/\\\[(\d+(?:\.\d+)?[a-z]*)\]/gi, '\\\\[$1]');
 
-              // 修复 cases 环境中的间距
+              // Fix spacing in cases environment
               fixed = fixed.replace(/&\s*\\\[6pt\]/g, '& \\\\');
 
-              // 修复常见语法错误: \sum{...} → \sum_{...}
+              // Fix common syntax errors: \sum{...} → \sum_{...}
               fixed = fixed.replace(/\\(sum|prod|int|lim|inf|sup|max|min)\{([^}]+)\}/g, '\\$1_{$2}');
 
-              // 修复 \operatorname 后面直接跟内容的情况
+              // Fix \operatorname followed immediately by content
               fixed = fixed.replace(/\\operatorname\{(\w+)\}(\()/g, '\\operatorname{$1}$2');
 
               return katex.renderToString(fixed, { displayMode: true, throwOnError: false, macros: {
@@ -272,7 +272,7 @@
             } catch { return match; }
           });
 
-          // \(...\) 行内公式
+          // \(...\) inline formula
           resultHTML = resultHTML.replace(/\\\(([\s\S]+?)\\\)/g, (match, formula) => {
             hasFormula = true;
             try {
@@ -280,7 +280,7 @@
             } catch { return match; }
           });
 
-          // \[...\] 块级公式 (保留换行)
+          // \[...\] block-level formula (preserve newlines)
           resultHTML = resultHTML.replace(/\\\[([\s\S]+?)\\\]/g, (match, formula) => {
             hasFormula = true;
             try {
@@ -288,10 +288,10 @@
             } catch { return match; }
           });
 
-          // $...$ 行内公式 (支持多行, 自动清理换行)
+          // $...$ inline formula (supports multi-line, auto-cleans newlines)
           resultHTML = resultHTML.replace(/\$([\s\S]+?)\$/g, (match, formula) => {
             const content = formula.trim();
-            // 清理换行和多余空格, 保持一行
+            // Clean up newlines and extra spaces, keep on one line
             const cleaned = content.replace(/\s+/g, ' ').trim();
             const looksLikeLatex = cleaned.length <= 2 || cleaned.includes('\\') ||
               cleaned.includes('_') || cleaned.includes('^') || cleaned.includes('{') ||
@@ -316,9 +316,9 @@
     }
   }
 
-  // ========== AI 对话复制功能 ==========
+  // ========== AI dialogue copy feature ==========
 
-  // 需要排除的类名前缀 (思维链和工具调用)
+  // Class name prefixes to exclude (thinking chain and tool calls)
   const EXCLUDE_PREFIXES = [
     'thinking_',
     'thinkingContent_',
@@ -334,28 +334,28 @@
     'userMessageContainer_'
   ];
 
-  // 检查元素是否应该被排除
+  // Check whether an element should be excluded
   function shouldExclude(element) {
     if (!element || !element.className) return false;
     const className = typeof element.className === 'string' ? element.className : '';
     return EXCLUDE_PREFIXES.some(prefix => className.includes(prefix));
   }
 
-  // 从 HTML 元素提取 Markdown 格式内容 (紧凑版)
+  // Extract Markdown-formatted content from an HTML element (compact version)
   function htmlToMarkdown(element) {
     if (!element) return '';
 
     const IGNORE_TAGS = new Set(['BUTTON', 'STYLE', 'SCRIPT', 'SVG', 'MAT-ICON']);
 
     function traverse(node, context = {}) {
-      // 文本节点
+      // Text node
       if (node.nodeType === 3) {
         const text = node.textContent;
         if (context.inPre) return text;
         return text.replace(/\s+/g, ' ');
       }
 
-      // 非元素节点跳过
+      // Skip non-element nodes
       if (node.nodeType !== 1) return '';
       if (IGNORE_TAGS.has(node.tagName)) return '';
       if (shouldExclude(node)) return '';
@@ -368,7 +368,7 @@
         inList: context.inList || tag === 'LI',
       };
 
-      // 先递归处理子节点
+      // Recursively process child nodes first
       const childrenContent = children
         .map(c => traverse(c, newContext))
         .join('');
@@ -378,14 +378,14 @@
         const annotation = node.querySelector('annotation[encoding="application/x-tex"]');
         if (annotation) {
           const tex = annotation.textContent;
-          // 清理换行和多余空格, 保持单行 (Obsidian 兼容)
+          // Clean up newlines and extra spaces, keep on one line (Obsidian compatible)
           const cleaned = tex.replace(/\s+/g, ' ').trim();
           const isDisplay = node.classList.contains('katex-display');
           return isDisplay ? `$$${cleaned}$$` : `$${cleaned}$`;
         }
       }
 
-      // 根据标签类型返回格式化内容
+      // Return formatted content based on tag type
       switch (tag) {
         case 'H1': return '\n# ' + childrenContent + '\n';
         case 'H2': return '\n## ' + childrenContent + '\n';
@@ -490,16 +490,16 @@
       }
     }
 
-    // 执行转换并紧凑化换行
+    // Run the conversion and compact newlines
     return traverse(element)
-      .replace(/\n{3,}/g, '\n\n')      // 3+ 个换行 → 最多1个空行
-      .replace(/^\n+/, '')             // 移除开头换行
-      .replace(/\n+$/, '')             // 移除末尾换行
-      .replace(/[ \t]+$/gm, '')        // 移除行尾空格
+      .replace(/\n{3,}/g, '\n\n')      // 3+ newlines → at most one blank line
+      .replace(/^\n+/, '')             // Remove leading newlines
+      .replace(/\n+$/, '')             // Remove trailing newlines
+      .replace(/[ \t]+$/gm, '')        // Remove trailing spaces on each line
       .trim();
   }
 
-  // 按轮次分组消息
+  // Group messages by turn
   function groupMessagesByTurn() {
     const container = document.querySelector('[class*="messagesContainer_"]');
     if (!container) return [];
@@ -527,61 +527,61 @@
     return turns;
   }
 
-  // 为消息添加复制按钮
+  // Add a copy button to a message
   function addCopyButton(messageEl) {
     if (messageEl.querySelector('.claude-copy-btn')) return;
 
     const btn = document.createElement('button');
     btn.className = 'claude-copy-btn';
-    btn.textContent = '复制';
-    btn.title = '复制完整 Markdown 内容 (不含思维链和工具调用)';
+    btn.textContent = 'Copy';
+    btn.title = 'Copy full Markdown content (excluding thinking chain and tool calls)';
 
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
-      // 获取整轮消息
+      // Get the full turn's messages
       const turnMessages = messageEl._turnMessages || [messageEl];
 
-      // 合并所有消息的 Markdown 内容
+      // Merge Markdown content from all messages in the turn
       const contents = turnMessages.map(msg => htmlToMarkdown(msg)).filter(c => c.trim());
       const finalContent = contents.join('\n\n');
 
       try {
         await navigator.clipboard.writeText(finalContent);
-        btn.textContent = '已复制';
+        btn.textContent = 'Copied';
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.textContent = '复制';
+          btn.textContent = 'Copy';
           btn.classList.remove('copied');
         }, 1500);
       } catch (err) {
         console.error('[Claude Enhance] Copy failed:', err);
-        btn.textContent = '失败';
-        setTimeout(() => { btn.textContent = '复制'; }, 1500);
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
       }
     });
 
     messageEl.appendChild(btn);
   }
 
-  // 扫描并添加复制按钮 (只在每轮末尾添加)
+  // Scan and add copy buttons (only at the end of each turn)
   function scanAndAddCopyButtons() {
     const turns = groupMessagesByTurn();
 
     turns.forEach(turnMessages => {
       if (turnMessages.length === 0) return;
 
-      // 只在每轮最后一个消息上添加按钮
+      // Only add the button on the last message of each turn
       const lastMessage = turnMessages[turnMessages.length - 1];
 
-      // 存储整轮消息的引用
+      // Store a reference to all messages in the turn
       lastMessage._turnMessages = turnMessages;
 
       addCopyButton(lastMessage);
     });
   }
 
-  // ========== 滚轮缩放功能 ==========
+  // ========== Scroll wheel zoom ==========
 
   function setupZoom() {
     let zoom = parseFloat(localStorage.getItem('claude-zoom') || '1.0');
@@ -612,18 +612,18 @@
       `;
       document.body.appendChild(indicator);
     }
-    indicator.textContent = `缩放: ${Math.round(zoom * 100)}%`;
+    indicator.textContent = `Zoom: ${Math.round(zoom * 100)}%`;
     indicator.style.opacity = '1';
     setTimeout(() => { indicator.style.opacity = '0'; }, 1000);
   }
 
-  // DOM 监听 - 防抖处理, 避免输出过程中抽搐
+  // DOM observer - debounced to avoid thrashing during streaming output
   function setupObserver() {
     let debounceTimer = null;
-    const DEBOUNCE_DELAY = 500; // 等待 500ms 无变化后再渲染
+    const DEBOUNCE_DELAY = 500; // Wait 500ms with no changes before rendering
 
     const observer = new MutationObserver((mutations) => {
-      // 跳过我们自己添加的元素
+      // Skip elements we added ourselves
       let hasRealChange = false;
       for (const m of mutations) {
         for (const node of m.addedNodes) {
@@ -640,10 +640,10 @@
 
       if (!hasRealChange) return;
 
-      // 清除之前的定时器, 重新计时
+      // Clear the previous timer and restart
       if (debounceTimer) clearTimeout(debounceTimer);
 
-      // 等待输出稳定后再渲染
+      // Wait for output to settle before rendering
       debounceTimer = setTimeout(() => {
         highlightAllCode();
         renderLaTeX();
@@ -654,10 +654,10 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  // DOM 探测工具 - 按 Ctrl+Shift+D 导出 DOM 结构
+  // DOM inspection tool - press Ctrl+Shift+D to export DOM structure
   function setupDOMInspector() {
     document.addEventListener('keydown', (e) => {
-      // Ctrl+Shift+D 触发 DOM 导出
+      // Ctrl+Shift+D triggers DOM export
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
         e.preventDefault();
         exportDOMStructure();
@@ -677,7 +677,7 @@
       potentialMessageSelectors: []
     };
 
-    // 收集所有类名
+    // Collect all class names
     document.querySelectorAll('*').forEach(el => {
       if (el.className && typeof el.className === 'string') {
         el.className.split(/\s+/).forEach(cls => {
@@ -686,7 +686,7 @@
       }
     });
 
-    // 查找可能的消息容器 (基于常见模式)
+    // Find potential message containers (based on common patterns)
     const messagePatterns = [
       '[class*="message"]', '[class*="Message"]',
       '[class*="chat"]', '[class*="Chat"]',
@@ -713,13 +713,13 @@
       } catch (e) {}
     });
 
-    // 分析 #root 下的结构
+    // Analyse the structure under #root
     const root = document.getElementById('root');
     if (root) {
       result.rootStructure = analyzeElement(root, 0, 4);
     }
 
-    // 查找包含大量文本的容器
+    // Find containers with a large amount of text
     const textContainers = [];
     document.querySelectorAll('div, section, article').forEach(el => {
       const text = el.innerText || '';
@@ -738,19 +738,19 @@
     });
     result.textContainers = textContainers.slice(0, 20);
 
-    // 转换 Set 为数组
+    // Convert Set to array
     result.allClassNames = Array.from(result.allClassNames).sort();
 
-    // 复制到剪贴板
+    // Copy to clipboard
     const output = JSON.stringify(result, null, 2);
     navigator.clipboard.writeText(output).then(() => {
-      showNotification('DOM 结构已复制到剪贴板! 请粘贴给 Claude 分析~');
+      showNotification('DOM structure copied to clipboard! Paste it to Claude for analysis.');
       console.log('[Claude Enhance] DOM structure copied to clipboard');
     }).catch(err => {
       console.error('[Claude Enhance] Failed to copy:', err);
-      // 降级: 打印到控制台
+      // Fallback: print to console
       console.log('[Claude Enhance] DOM Structure:\n', output);
-      showNotification('复制失败, 请查看控制台 (F12)');
+      showNotification('Copy failed. Please check the console (F12).');
     });
   }
 
@@ -764,7 +764,7 @@
       childCount: el.children.length
     };
 
-    // 检查特殊属性
+    // Check special attributes
     const attrs = ['role', 'data-message', 'data-turn', 'data-type', 'data-testid'];
     attrs.forEach(attr => {
       if (el.hasAttribute(attr)) {
@@ -772,7 +772,7 @@
       }
     });
 
-    // 递归分析子元素 (只分析前几个)
+    // Recursively analyse child elements (first few only)
     if (el.children.length > 0 && depth < maxDepth) {
       info.children = Array.from(el.children)
         .slice(0, 5)
@@ -808,7 +808,7 @@
     }, 2000);
   }
 
-  // 初始化
+  // Initialise
   function init() {
     console.log('[Claude Enhance] Initializing...');
     injectStyles();

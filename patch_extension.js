@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Claude Code 扩展补丁脚本 v7
- * 适配 2.1.31 版本
+ * Claude Code extension patch script v7
+ * Compatible with version 2.1.31
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// 自动检测扩展目录
+// Auto-detect the extension directory
 function findExtensionDir() {
   const home = process.env.USERPROFILE || process.env.HOME;
   const extBase = path.join(home, '.vscode/extensions');
@@ -34,16 +34,16 @@ const enhanceJs = path.join(__dirname, 'webview', 'enhance.js');
 console.log('[Patch] Extension dir:', extDir);
 console.log('[Patch] Applying patch v7...');
 
-// 复制 enhance.js
+// Copy enhance.js
 const targetEnhance = path.join(extDir, 'webview', 'enhance.js');
 fs.copyFileSync(enhanceJs, targetEnhance);
 console.log('[Patch] Copied enhance.js');
 
-// 读取 extension.js
+// Read extension.js
 let content = fs.readFileSync(extensionJs, 'utf8');
 let modified = false;
 
-// ========== 修改 1: style-src 添加 CDN ==========
+// ========== Patch 1: add CDN to style-src ==========
 if (!content.includes("style-src") || content.includes("style-src") && !content.match(/style-src[^`]*cdnjs/)) {
   const stylePattern = /(\w)=`style-src \$\{(\w)\.cspSource\} 'unsafe-inline'`/;
   const styleMatch = content.match(stylePattern);
@@ -58,7 +58,7 @@ if (!content.includes("style-src") || content.includes("style-src") && !content.
   console.log('[Patch] style-src: already patched');
 }
 
-// ========== 修改 2: script-src 添加 CDN ==========
+// ========== Patch 2: add CDN to script-src ==========
 if (!content.match(/script-src 'nonce-\$\{[^}]+\}' https:\/\/cdnjs/)) {
   content = content.replace(
     /script-src 'nonce-\$\{(\w)\}'/g,
@@ -70,7 +70,7 @@ if (!content.match(/script-src 'nonce-\$\{[^}]+\}' https:\/\/cdnjs/)) {
   console.log('[Patch] script-src: already patched');
 }
 
-// ========== 修改 3: font-src 添加 CDN + data: ==========
+// ========== Patch 3: add CDN + data: to font-src ==========
 const fontPattern = /(\w)=`font-src \$\{(\w)\.cspSource\}`/;
 const fontMatch = content.match(fontPattern);
 if (fontMatch) {
@@ -83,9 +83,9 @@ if (fontMatch) {
   console.log('[Patch] font-src: already patched or not found');
 }
 
-// ========== 修改 4: 注入 enhance.js ==========
+// ========== Patch 4: inject enhance.js ==========
 if (!content.includes('enhance.js')) {
-  // 找到 script 标签模式
+  // Find the script tag pattern
   const scriptMatch = content.match(/nonce="\$\{(\w)\}" src="\$\{(\w)\}" type="module"><\/script>/);
   if (scriptMatch) {
     const [full, nonceVar, srcVar] = scriptMatch;
@@ -98,20 +98,20 @@ if (!content.includes('enhance.js')) {
   console.log('[Patch] enhance.js: already injected');
 }
 
-// 修改 5: 修复 diff 视图铺满窗口问题 - 在侧边栏打开
-// 查找 let v={preview:!1} 模式并添加 viewColumn:Beside
+// Patch 5: fix diff view filling the whole window - open in the side panel
+// Find the let v={preview:!1} pattern and add viewColumn:Beside
 content = content.replace(
   /let v=\{preview:!1\}/g,
   'let v={preview:!1,viewColumn:tr.ViewColumn.Beside}'
 );
 
-// 同时修改另一个可能的变量名 N
+// Also patch the alternative variable name N
 content = content.replace(
   /let N=\{preview:!1,preserveFocus:!0\}/g,
   'let N={preview:!1,preserveFocus:!0,viewColumn:Gt.ViewColumn.Beside}'
 );
 
-// 写回文件
+// Write back to file
 if (modified) {
   fs.writeFileSync(extensionJs, content, 'utf8');
   console.log('[Patch] Done! Please reload VSCode window.');
