@@ -23,9 +23,18 @@ UI enhancements for the Claude Code VSCode extension:
 
 Install once; patches automatically on startup and after every Claude Code update.
 
+**Build the `.vsix`** (only needed after pulling changes):
+
 ```bash
-# From the repo root:
-ln -s "$(pwd)/vscode-extension" ~/.vscode/extensions/mgubi.claude-code-enhance-0.1.0
+cd vscode-extension
+npm install   # only needed once
+node build.js
+```
+
+**Install into VSCode:**
+
+```bash
+code --install-extension vscode-extension/claude-code-enhance-0.1.0.vsix
 ```
 
 Then reload VSCode (`Ctrl+Shift+P` → `Developer: Reload Window`).

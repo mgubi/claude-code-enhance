@@ -38,8 +38,9 @@ ext = ext.replace(
 );
 fs.writeFileSync(path.join(DIST, 'extension.js'), ext);
 
-// 4. Copy package.json (main stays './extension.js')
+// 4. Copy package.json and README (main stays './extension.js')
 fs.copyFileSync(path.join(__dirname, 'package.json'), path.join(DIST, 'package.json'));
+fs.copyFileSync(path.join(__dirname, 'README.md'),    path.join(DIST, 'README.md'));
 
 // 5. Run vsce package from dist/
 const vsce = path.join(__dirname, 'node_modules', '.bin', 'vsce');

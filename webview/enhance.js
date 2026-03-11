@@ -197,9 +197,8 @@
       const checkKatex = () => {
         if (typeof katex !== 'undefined') {
           window.katexLoaded = true;
-          console.log('[Claude Enhance] KaTeX ready:', typeof katex);
+          console.log('[Claude Enhance] KaTeX ready');
         } else {
-          console.log('[Claude Enhance] KaTeX not on window, retrying...');
           setTimeout(checkKatex, 100);
         }
       };
@@ -291,7 +290,7 @@
               // Fix \operatorname followed immediately by content
               fixed = fixed.replace(/\\operatorname\{(\w+)\}(\()/g, '\\operatorname{$1}$2');
 
-              return katex.renderToString(fixed, { displayMode: true, throwOnError: false, macros: {
+              return katex.renderToString(fixed, { displayMode: true, throwOnError: false, strict: 'ignore', macros: {
                 "\\begin{cases}": "\\begin{cases}",
                 "\\end{cases}": "\\end{cases}",
                 "\\text": "\\text"

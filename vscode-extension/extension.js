@@ -4,8 +4,8 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const PATCH_SCRIPT   = path.join(__dirname, '..', 'patch_extension.js');
-const RESTORE_SCRIPT = path.join(__dirname, '..', 'restore_extension.js');
+const PATCH_SCRIPT   = path.join(__dirname, 'patch_extension.js');
+const RESTORE_SCRIPT = path.join(__dirname, 'restore_extension.js');
 
 let outputChannel;
 
@@ -75,10 +75,10 @@ function activate(context) {
   outputChannel = vscode.window.createOutputChannel('Claude Code Enhance');
   context.subscriptions.push(outputChannel);
 
-  // Set initial command visibility before running anything
-  setPatched(checkIsPatched());
-
-  runPatch('startup');
+  // Set initial command visibility and auto-refresh patch if already applied
+  const initiallyPatched = checkIsPatched();
+  setPatched(initiallyPatched);
+  if (initiallyPatched) runPatch('startup');
 
   let lastClaudeVersion = getClaudeVersion();
   context.subscriptions.push(
