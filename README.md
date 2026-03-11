@@ -8,7 +8,7 @@ UI enhancements for the Claude Code VSCode extension:
 - **LaTeX rendering** — inline and display math via KaTeX
 - **Copy button** — copy any AI reply as Markdown
 - **Scroll zoom** — `Ctrl+Wheel` to zoom 50–200%
-- **Table & list styling** — dark theme, hover highlights, proper numbering
+- **Table & list styling** — dark and light theme, hover highlights, proper numbering
 
 ![Screenshot](screenshot.png)
 
@@ -77,7 +77,7 @@ Once injected, `enhance.js` runs inside the webview on every page load. It uses 
 | LaTeX rendering | Inline `$...$`, display `$$...$$`, `\(...\)`, `\[...\]` via KaTeX |
 | Copy button | Hover an AI reply to copy it as Markdown (excludes thinking/tool blocks) |
 | Scroll zoom | `Ctrl+Wheel` to zoom 50–200%; persisted across sessions |
-| Table styling | Dark theme with gradient header and hover highlight |
+| Table styling | Dark and light theme with gradient header and hover highlight |
 | Code wrapping | Long lines wrap inside code blocks |
 | List fix | Numbered lists render without truncation |
 | DOM inspector | `Ctrl+Shift+D` copies the page DOM structure to the clipboard |

@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "publisher": "mgubi",
   "engines": { "vscode": "^1.80.0" },
+  "icon": "icon.png",
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
   "main": "./extension.js",

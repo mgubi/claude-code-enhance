@@ -45,4 +45,5 @@ if (fs.existsSync(enhanceTarget)) {
   console.log('[Restore] Removed enhance.js from webview directory.');
 }
 
+
 console.log('[Restore] Please reload the VSCode window.');
