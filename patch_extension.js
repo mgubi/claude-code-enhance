@@ -84,18 +84,34 @@ if (fontMatch) {
 }
 
 // ========== Patch 4: inject enhance.js ==========
-if (!content.includes('enhance.js')) {
-  // Find the script tag pattern
-  const scriptMatch = content.match(/nonce="\$\{(\w)\}" src="\$\{(\w)\}" type="module"><\/script>/);
+// Detect the vscode module variable name dynamically (it changes between extension versions)
+const vscodeVarMatch = content.match(/localResourceRoots:\[(\w+)\.Uri\.joinPath\(this\.extensionUri/);
+const vscodeVar = vscodeVarMatch ? vscodeVarMatch[1] : null;
+if (!vscodeVar) {
+  console.error('[Patch] Could not detect vscode variable name — skipping enhance.js injection');
+} else {
+  console.log('[Patch] Detected vscode variable:', vscodeVar);
+  // Build the correct inject snippet
+  const scriptMatch = content.match(/nonce="\$\{(\w+)\}" src="\$\{(\w+)\}" type="module"><\/script>/);
   if (scriptMatch) {
     const [full, nonceVar, srcVar] = scriptMatch;
-    const replacement = `nonce="\${${nonceVar}}" src="\${${srcVar}}" type="module"></script><script nonce="\${${nonceVar}}" src="\${z.asWebviewUri(F0.Uri.joinPath(this.extensionUri,"webview","enhance.js"))}"></script>`;
-    content = content.replace(full, replacement);
-    modified = true;
-    console.log('[Patch] Injected enhance.js');
+    const injectSnippet = `<script nonce="\${${nonceVar}}" src="\${z.asWebviewUri(${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js"))}"></script>`;
+    const correctFull = `nonce="\${${nonceVar}}" src="\${${srcVar}}" type="module"></script>${injectSnippet}`;
+
+    if (!content.includes('enhance.js')) {
+      // Fresh injection
+      content = content.replace(full, correctFull);
+      modified = true;
+      console.log('[Patch] Injected enhance.js');
+    } else if (!content.includes(`${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js")`)) {
+      // Already injected but with a stale variable name — replace it
+      content = content.replace(/\w+\.Uri\.joinPath\(this\.extensionUri,"webview","enhance\.js"\)/, `${vscodeVar}.Uri.joinPath(this.extensionUri,"webview","enhance.js")`);
+      modified = true;
+      console.log('[Patch] Updated enhance.js injection (stale vscode variable replaced with', vscodeVar + ')');
+    } else {
+      console.log('[Patch] enhance.js: already injected with correct variable');
+    }
   }
-} else {
-  console.log('[Patch] enhance.js: already injected');
 }
 
 // Patch 5: fix diff view filling the whole window - open in the side panel
