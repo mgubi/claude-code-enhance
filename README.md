@@ -14,6 +14,10 @@ UI enhancements for the Claude Code VSCode extension:
 - **Scroll zoom** — `Ctrl+Wheel` to zoom 50–200%
 - **Table & list styling** — dark and light theme, hover highlights, proper numbering
 
+![Screenshot](screenshot2.png)
+
+
+
 ## Requirements
 
 - Claude Code extension v2.1.31+
