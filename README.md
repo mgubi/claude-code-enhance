@@ -1,16 +1,18 @@
+<img src="vscode-extension/icon.png" width="96" alt="Claude Code Enhance icon">
+
 # claude-code-enhance
 
 > Inspired by [Sophomoresty/claude-code-enhance](https://github.com/Sophomoresty/claude-code-enhance).
 
 UI enhancements for the Claude Code VSCode extension:
 
+![Screenshot](screenshot.png)
+
 - **Syntax highlighting** — 180+ languages via Highlight.js
 - **LaTeX rendering** — inline and display math via KaTeX
 - **Copy button** — copy any AI reply as Markdown
 - **Scroll zoom** — `Ctrl+Wheel` to zoom 50–200%
 - **Table & list styling** — dark and light theme, hover highlights, proper numbering
-
-![Screenshot](screenshot.png)
 
 ## Requirements
 

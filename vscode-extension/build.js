@@ -41,8 +41,7 @@ fs.writeFileSync(path.join(DIST, 'extension.js'), ext);
 // 4. Copy package.json, README, and icon (main stays './extension.js')
 fs.copyFileSync(path.join(__dirname, 'package.json'), path.join(DIST, 'package.json'));
 fs.copyFileSync(path.join(__dirname, 'README.md'),    path.join(DIST, 'README.md'));
-fs.copyFileSync(path.join(__dirname, 'icon.png'),         path.join(DIST, 'icon.png'));
-fs.copyFileSync(path.join(__dirname, 'icon-patched.png'), path.join(DIST, 'icon-patched.png'));
+fs.copyFileSync(path.join(__dirname, 'icon.png'), path.join(DIST, 'icon.png'));
 
 // 5. Run vsce package from dist/
 const vsce = path.join(__dirname, 'node_modules', '.bin', 'vsce');
