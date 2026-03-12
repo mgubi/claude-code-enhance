@@ -703,11 +703,15 @@
     function scheduleSettle() {
       if (settleTimer) clearTimeout(settleTimer);
       if (idleHandle && window.cancelIdleCallback) cancelIdleCallback(idleHandle);
-      if (window.requestIdleCallback) {
-        idleHandle = requestIdleCallback(runHeavyOps, { timeout: SETTLE_DELAY });
-      } else {
-        settleTimer = setTimeout(runHeavyOps, SETTLE_DELAY);
-      }
+      // Wait SETTLE_DELAY (hard minimum), then defer to idle time
+      settleTimer = setTimeout(() => {
+        settleTimer = null;
+        if (window.requestIdleCallback) {
+          idleHandle = requestIdleCallback(runHeavyOps);
+        } else {
+          runHeavyOps();
+        }
+      }, SETTLE_DELAY);
     }
 
     const observer = new MutationObserver((mutations) => {
