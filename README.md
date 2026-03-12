@@ -17,11 +17,9 @@ UI enhancements for the Claude Code VSCode extension:
 ![Screenshot](screenshot2.png)
 
 
-
 ## Requirements
 
 - Claude Code extension v2.1.31+
-- macOS / Windows / Linux
 
 ## Installation
 
@@ -40,7 +38,7 @@ node build.js
 **Install into VSCode:**
 
 ```bash
-code --install-extension vscode-extension/claude-code-enhance-0.1.0.vsix
+code --install-extension vscode-extension/claude-code-enhance-0.2.0.vsix
 ```
 
 Then reload VSCode (`Ctrl+Shift+P` → `Developer: Reload Window`).
@@ -59,6 +57,19 @@ Then reload VSCode. Re-run after every Claude Code extension update.
 
 The script copies `webview/enhance.js` into the extension directory and relaxes the CSP to allow loading from cdnjs.cloudflare.com.
 
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| Code highlighting | 180+ languages via Highlight.js (theme-aware: dark/light) |
+| LaTeX rendering | Inline `$...$`, display `$$...$$`, `\(...\)`, `\[...\]` via KaTeX |
+| Copy button | Hover an AI reply to copy it as Markdown (excludes thinking/tool blocks) |
+| Scroll zoom | `Ctrl+Wheel` to zoom 50–200%; persisted across sessions |
+| Table styling | Dark and light theme with gradient header and hover highlight |
+| Code wrapping | Long lines wrap inside code blocks |
+| List fix | Numbered lists render without truncation |
+| DOM inspector | `Ctrl+Shift+D` copies the page DOM structure to the clipboard |
+
 ## How it works
 
 The Claude Code extension renders its UI in a VSCode webview — an isolated iframe with a strict [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) that blocks external resources by default.
@@ -73,20 +84,7 @@ The Claude Code extension renders its UI in a VSCode webview — an isolated ifr
 | 4 | HTML template | injects a `<script>` tag that loads `enhance.js` after the main module |
 | 5 | Diff view options | adds `viewColumn: Beside` so diffs open in a side panel instead of full-window |
 
-Once injected, `enhance.js` runs inside the webview on every page load. It uses a debounced `MutationObserver` (500 ms quiet period) to watch for new content and re-applies highlighting, LaTeX rendering, and copy buttons as Claude streams its responses. Libraries (Highlight.js, KaTeX) are loaded lazily from cdnjs on first use.
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| Code highlighting | 180+ languages via Highlight.js (vs2015 theme) |
-| LaTeX rendering | Inline `$...$`, display `$$...$$`, `\(...\)`, `\[...\]` via KaTeX |
-| Copy button | Hover an AI reply to copy it as Markdown (excludes thinking/tool blocks) |
-| Scroll zoom | `Ctrl+Wheel` to zoom 50–200%; persisted across sessions |
-| Table styling | Dark and light theme with gradient header and hover highlight |
-| Code wrapping | Long lines wrap inside code blocks |
-| List fix | Numbered lists render without truncation |
-| DOM inspector | `Ctrl+Shift+D` copies the page DOM structure to the clipboard |
+Once injected, `enhance.js` runs inside the webview on every page load. It uses a two-phase streaming-aware `MutationObserver` — copy buttons are placed immediately (O(1) via incremental turn tracking), while heavier operations (syntax highlighting, LaTeX) run after the stream settles (150 ms via `requestIdleCallback`). Libraries (Highlight.js, KaTeX) are loaded lazily from cdnjs on first use.
 
 ## Restoring the original extension
 
@@ -102,3 +100,27 @@ Then reload VSCode.
 
 - **Features not showing** — reload the VSCode window.
 - **Script errors** — verify the CSP was patched correctly in `extension.js`.
+
+## Changelog
+
+### v0.2.0
+- Two-phase streaming-aware MutationObserver: immediate O(1) copy button placement + 150ms settle via `requestIdleCallback` for highlight/LaTeX (replaces 500ms debounce)
+- Incremental turn tracking — `groupMessagesByTurn()` called once at init; observer maintains state as nodes arrive
+- `enhance-done` sentinel class for robust self-exclusion filtering
+- Theme-aware syntax highlighting (dark: vs2015, light: vs)
+- Rounded borders on highlighted code blocks
+- Patch script reads enhance.js version from header comment
+
+### v0.1.0
+- VSCode extension wrapper — auto-patches on startup and after Claude Code updates
+- Command palette integration (Apply Patch / Restore Original)
+- Copy button on AI replies (Markdown export, excludes thinking/tool blocks)
+- Light theme support for tables
+- Improved variable detection in patch script
+
+### v0.0.x (pre-extension)
+- Initial enhancement script with syntax highlighting (Highlight.js), LaTeX rendering (KaTeX), scroll zoom, table/list styling, code wrapping, and DOM inspector
+- Manual patching via `node patch_extension.js`
+- Backup/restore mechanism for original extension.js
+- Diff view opens in side panel
+
