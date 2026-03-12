@@ -29,9 +29,20 @@ The extension makes targeted edits to Claude Code's compiled `extension.js`:
 | 4 | HTML template | injects `enhance.js` after the main module script |
 | 5 | Diff view options | opens diffs in a side panel (`viewColumn: Beside`) |
 
-`enhance.js` runs inside Claude Code's webview on every page load, using a debounced `MutationObserver` to re-apply highlighting, LaTeX, and copy buttons as Claude streams responses.
+`enhance.js` runs inside Claude Code's webview on every page load, using a two-phase streaming-aware `MutationObserver` to apply highlighting, LaTeX, and copy buttons as Claude streams responses.
 
 ## Requirements
 
 - Claude Code extension v2.1.31+
-- macOS / Windows / Linux
+
+## Changelog
+
+### v0.2.0
+- Two-phase observer: instant copy buttons + 150ms settle for highlight/LaTeX
+- Incremental turn tracking (O(1) per mutation)
+- Theme-aware syntax highlighting (dark/light)
+- Rounded borders on code blocks
+
+### v0.1.0
+- Initial release with auto-patching, syntax highlighting, LaTeX, copy buttons, zoom, and table styling
+
