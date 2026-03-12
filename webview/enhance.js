@@ -1,5 +1,5 @@
 /**
- * Claude Code UI Enhancement Script v10
+ * Claude Code UI Enhancement Script v11
  * Features: scroll zoom, fonts, tables, LaTeX, line wrap, code highlighting, AI dialogue copy
  */
 
@@ -7,6 +7,13 @@
   'use strict';
 
   console.log('[Claude Enhance] Loading...');
+
+  // Turn-tracking state — maintained incrementally by the MutationObserver
+  var turnsContainer = null;   // cached [class*="messagesContainer_"] element
+  var turnsInitialized = false;
+  var completedTurns = [];     // array of frozen turn arrays (each a completed AI turn)
+  var activeTurn = [];         // growing array of timelineMessage elements in the current turn
+  var activeTurnLastEl = null; // last element in activeTurn
 
   // Inject styles
   function injectStyles() {
@@ -120,6 +127,16 @@
         white-space: pre-wrap !important;
         word-break: break-word !important;
       }
+      /* Rounded border on highlighted code blocks */
+      pre code.hljs {
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 12px;
+        display: block;
+      }
+      body.vscode-light pre code.hljs {
+        border-color: rgba(0, 0, 0, 0.15);
+      }
 
       /* AI message copy button styles */
       .claude-copy-btn {
@@ -166,9 +183,14 @@
   function injectHighlightJS() {
     if (window.hljsLoaded) return;
 
+    const isDark = document.body.classList.contains('vscode-dark');
+    console.log('[Claude Enhance] body classes:', document.body.className, '→ isDark:', isDark);
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css';
+    css.id = 'hljs-theme';
+    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/' +
+      (isDark ? 'vs2015.min.css' : 'vs.min.css');
+    console.log('[Claude Enhance] hljs theme:', css.href);
     document.head.appendChild(css);
 
     const script = document.createElement('script');
@@ -558,7 +580,7 @@
     if (messageEl.querySelector('.claude-copy-btn')) return;
 
     const btn = document.createElement('button');
-    btn.className = 'claude-copy-btn';
+    btn.className = 'claude-copy-btn enhance-done';
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
     btn.title = 'Copy full Markdown content (excluding thinking chain and tool calls)';
 
@@ -592,21 +614,37 @@
     messageEl.appendChild(btn);
   }
 
-  // Scan and add copy buttons (only at the end of each turn)
+  // Seed turn-tracking state from current DOM — called once at startup
+  function initTurnState() {
+    turnsContainer = document.querySelector('[class*="messagesContainer_"]');
+    if (!turnsContainer) return;
+    const turns = groupMessagesByTurn(); // only call ever
+    completedTurns = turns.slice(0, -1);
+    activeTurn = turns.length > 0 ? turns[turns.length - 1] : [];
+    activeTurnLastEl = activeTurn.length > 0 ? activeTurn[activeTurn.length - 1] : null;
+    // Place buttons on all completed turns
+    for (let t = 0; t < completedTurns.length; t++) {
+      const last = completedTurns[t][completedTurns[t].length - 1];
+      if (last && !last.dataset.copyBtnDone) {
+        last._turnMessages = completedTurns[t];
+        addCopyButton(last);
+        last.dataset.copyBtnDone = '1';
+      }
+    }
+    // Place button on active turn's last message
+    if (activeTurnLastEl) {
+      activeTurnLastEl._turnMessages = activeTurn;
+      addCopyButton(activeTurnLastEl);
+    }
+    turnsInitialized = true;
+  }
+
+  // Add copy button to the current active turn's last message — O(1)
   function scanAndAddCopyButtons() {
-    const turns = groupMessagesByTurn();
-
-    turns.forEach(turnMessages => {
-      if (turnMessages.length === 0) return;
-
-      // Only add the button on the last message of each turn
-      const lastMessage = turnMessages[turnMessages.length - 1];
-
-      // Store a reference to all messages in the turn
-      lastMessage._turnMessages = turnMessages;
-
-      addCopyButton(lastMessage);
-    });
+    if (!turnsInitialized) return; // initTurnState() handles initial placement
+    if (!activeTurnLastEl) return;
+    activeTurnLastEl._turnMessages = activeTurn; // keep reference fresh as turn grows
+    addCopyButton(activeTurnLastEl);             // no-op if button already present
   }
 
   // ========== Scroll wheel zoom ==========
@@ -632,6 +670,7 @@
     if (!indicator) {
       indicator = document.createElement('div');
       indicator.id = 'zoom-indicator';
+      indicator.classList.add('enhance-done');
       indicator.style.cssText = `
         position: fixed; top: 20px; right: 20px;
         background: rgba(40, 40, 40, 0.95); color: #fff;
@@ -645,38 +684,83 @@
     setTimeout(() => { indicator.style.opacity = '0'; }, 1000);
   }
 
-  // DOM observer - debounced to avoid thrashing during streaming output
+  // DOM observer - two-phase: immediate copy button placement, then heavy ops after settle
   function setupObserver() {
-    let debounceTimer = null;
-    const DEBOUNCE_DELAY = 500; // Wait 500ms with no changes before rendering
+    const SETTLE_DELAY = 150;
+    let streaming = false;
+    let settleTimer = null;
+    let idleHandle = null;
+
+    function runHeavyOps() {
+      settleTimer = null;
+      idleHandle = null;
+      streaming = false;
+      highlightAllCode();
+      renderLaTeX();
+      scanAndAddCopyButtons();
+    }
+
+    function scheduleSettle() {
+      if (settleTimer) clearTimeout(settleTimer);
+      if (idleHandle && window.cancelIdleCallback) cancelIdleCallback(idleHandle);
+      if (window.requestIdleCallback) {
+        idleHandle = requestIdleCallback(runHeavyOps, { timeout: SETTLE_DELAY });
+      } else {
+        settleTimer = setTimeout(runHeavyOps, SETTLE_DELAY);
+      }
+    }
 
     const observer = new MutationObserver((mutations) => {
-      // Skip elements we added ourselves
+      // Update incremental turn state and detect real (non-enhance) changes
       let hasRealChange = false;
-      for (const m of mutations) {
-        for (const node of m.addedNodes) {
-          if (node.nodeType === 1) {
+      if (!turnsInitialized) {
+        initTurnState();
+        hasRealChange = turnsInitialized; // only true if container was found and init succeeded
+      } else {
+        if (!turnsContainer) turnsContainer = document.querySelector('[class*="messagesContainer_"]');
+        for (const m of mutations) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType !== 1) continue;
+            // Update turn tracking for direct children of the messages container
+            if (turnsContainer && node.parentElement === turnsContainer) {
+              const cls = node.className || '';
+              if (cls.includes('userMessage')) {
+                // Turn boundary: freeze active turn
+                if (activeTurn.length > 0) {
+                  completedTurns.push(activeTurn);
+                  if (activeTurnLastEl) activeTurnLastEl.dataset.copyBtnDone = '1';
+                }
+                activeTurn = [];
+                activeTurnLastEl = null;
+              } else if (cls.includes('timelineMessage')) {
+                // New AI message — move button to this new last element
+                if (activeTurnLastEl) {
+                  const oldBtn = activeTurnLastEl.querySelector('.claude-copy-btn');
+                  if (oldBtn) oldBtn.remove();
+                }
+                activeTurn.push(node);
+                activeTurnLastEl = node;
+              }
+            }
+            // Classify as a real change if not injected by enhance.js or a library
             const cls = node.className?.toString() || '';
-            if (!cls.includes('hljs') && !cls.includes('katex') && !cls.includes('zoom-indicator')) {
+            if (!cls.includes('enhance-done') && !node.closest('pre, .katex')) {
               hasRealChange = true;
-              break;
             }
           }
         }
-        if (hasRealChange) break;
       }
 
       if (!hasRealChange) return;
 
-      // Clear the previous timer and restart
-      if (debounceTimer) clearTimeout(debounceTimer);
-
-      // Wait for output to settle before rendering
-      debounceTimer = setTimeout(() => {
-        highlightAllCode();
-        renderLaTeX();
+      // Phase 1: immediately place copy button on active turn's last message
+      if (!streaming) {
+        streaming = true;
         scanAndAddCopyButtons();
-      }, DEBOUNCE_DELAY);
+      }
+
+      // Phase 2: schedule highlight + LaTeX after stream settles
+      scheduleSettle();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -847,7 +931,7 @@
     setupDOMInspector();
     highlightAllCode();
     renderLaTeX();
-    scanAndAddCopyButtons();
+    initTurnState();
   }
 
   if (document.readyState === 'loading') {

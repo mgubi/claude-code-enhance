@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Claude Code extension patch script v7
- * Compatible with version 2.1.31
+ * Claude Code extension patch script
+ * Compatible with version 2.1.31+
  */
 
 const fs = require('fs');
@@ -31,8 +31,11 @@ const extDir = findExtensionDir();
 const extensionJs = path.join(extDir, 'extension.js');
 const enhanceJs = path.join(__dirname, 'webview', 'enhance.js');
 
+// Extract version from enhance.js header comment (e.g. "Enhancement Script v11")
+const enhanceVersion = (fs.readFileSync(enhanceJs, 'utf8').match(/Script v(\d+)/) || [])[1] || '?';
+
 console.log('[Patch] Extension dir:', extDir);
-console.log('[Patch] Applying patch v7...');
+console.log(`[Patch] Applying patch (enhance.js v${enhanceVersion})...`);
 
 // Backup original extension.js (only on first run — never overwrite an existing backup)
 const backupJs = extensionJs + '.orig';

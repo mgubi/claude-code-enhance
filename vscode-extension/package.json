@@ -2,7 +2,7 @@
   "name": "claude-code-enhance",
   "displayName": "Claude Code Enhance",
   "description": "Patches Claude Code with syntax highlighting, LaTeX, copy buttons, and zoom.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "mgubi",
   "engines": { "vscode": "^1.80.0" },
   "icon": "icon.png",
